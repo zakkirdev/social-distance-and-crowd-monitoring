@@ -12,4 +12,4 @@ instances detected in the video frame
 
 ## External Library
 
-OpenCV, NumPy
+OpenCV, NumPy, TensorFlow
