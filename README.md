@@ -9,5 +9,3 @@ The implementation of this application is by using computer vision and machine l
 Pre-trained model is used to detect human and draw a centroid to represent one instance. The social distance is practised when people
 have distance more than one meter and violating it if they less than one meter. The social distance is calculated pairwise of each 
 instances detected in the video frame
-
-The movement of people is tracked to count the number or people who enter an exit the building.
