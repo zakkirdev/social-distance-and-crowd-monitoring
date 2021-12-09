@@ -12,6 +12,10 @@ class CentroidTracker():
         self.nextObjectID = 0
         self.objects = OrderedDict()
         self.disappeared = OrderedDict()
+        # store the number of maximum consecutive frames a given
+        # object is allowed to be marked as "disappeared" until we
+        # need to deregister the object from tracking
+        self.maxDisappeared = maxDisappeared
 
         # store the number of maximum consecutive frames a given
         # object is allowed to be marked as "disappeared" until we
@@ -19,7 +23,7 @@ class CentroidTracker():
         self.maxDisappeared = maxDisappeared
 
     def register(self, centroid):
-        # when registering an object we us the next available object
+        # when registering an object we use the next available object
         # ID to store the centroid
         self.objects[self.nextObjectID] = centroid
         self.disappeared[self.nextObjectID] = 0
@@ -44,7 +48,7 @@ class CentroidTracker():
                 # frames where a given object has been marked as
                 # missing, deregister it
                 if self.disappeared[objectID] > self.maxDisappeared:
-                    self.deregister[objectID]
+                    self.deregister(objectID)
 
                 # return early as there are no centroids or tracking info to update
                 return self.objects
@@ -89,5 +93,59 @@ class CentroidTracker():
             # sorting using the previously computed row index list
             cols = D.argmin(axis=1)[rows]
 
+			# in order to determine if we need to update, register,
+			# or deregister an object we need to keep track of which
+			# of the rows and column indexes we have already examined
+            usedRows = set()
+            usedCols = set()
+			# loop over the combination of the (row, column) index
+			# tuples
+            for (row, col) in zip(rows, cols):
+                # if we have already examined either the row or
+                # column value before, ignore it
+                # val
+                if row in usedRows or col in usedCols:
+                    continue
+                # otherwise, grab the object ID for the current row,
+                # set its new centroid, and reset the disappeared
+                # counter
+                objectID = objectIDs[row]
+                self.objects[objectID] = inputCentroids[col]
+                self.disappeared[objectID] = 0
+                # indicate that we have examined each of the row and
+                # column indexes, respectively
+                usedRows.add(row)
+                usedCols.add(col)
 
+			# compute both the row and column index we have NOT yet
+			# examined
+            unusedRows = set(range(0, D.shape[0])).difference(usedRows)
+            unusedCols = set(range(0, D.shape[1])).difference(usedCols)
+            print(unusedCols)
+            print(unusedRows)
 
+            # in the event that the number of object centroids is
+            # equal or greater than the number of input centroids
+            # we need to check and see if some of these objects have
+            # potentially disappeared
+            if D.shape[0] >= D.shape[1]:
+                # loop over the unused row indexes
+                for row in unusedRows:
+                    # grab the object ID for the corresponding row
+                    # index and increment the disappeared counter
+                    objectID = objectIDs[row]
+                    self.disappeared[objectID] += 1
+                    # check to see if the number of consecutive
+                    # frames the object has been marked "disappeared"
+                    # for warrants deregistering the object
+                    if self.disappeared[objectID] > self.maxDisappeared:
+                        self.deregister(objectID)
+
+                # otherwise, if the number of input centroids is greater
+                # than the number of existing object centroids we need to
+                # register each new input centroid as a trackable object
+            else:
+                for col in unusedCols:
+                    self.register(inputCentroids[col])
+        # return the set of trackable objects
+        return self.objects
