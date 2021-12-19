@@ -4,7 +4,7 @@ from collections import OrderedDict
 import numpy as np
 
 class CentroidTracker():
-    def __init__(self, maxDisappeared=50):
+    def __init__(self, maxDisappeared=50, maxDistance=100):
         # initialize the next unique object ID along with two ordered
         # dictionaries used to keep track of mapping a given object
         # ID to its centroid and number of consecutive frames it has
@@ -20,7 +20,7 @@ class CentroidTracker():
         # store the number of maximum consecutive frames a given
         # object is allowed to be marked as "disappeared" until we
         # need to deregister the object from tracking
-        self.maxDisappeared = maxDisappeared
+        self.maxDistance = maxDistance
 
     def register(self, centroid):
         # when registering an object we use the next available object
@@ -106,6 +106,13 @@ class CentroidTracker():
                 # val
                 if row in usedRows or col in usedCols:
                     continue
+
+                # if the distance between centroids is greater than
+                # the maximum distance, do not associate the two
+                # centroids to the same object
+                if D[row, col] > self.maxDistance:
+                    continue
+
                 # otherwise, grab the object ID for the current row,
                 # set its new centroid, and reset the disappeared
                 # counter
@@ -121,8 +128,6 @@ class CentroidTracker():
 			# examined
             unusedRows = set(range(0, D.shape[0])).difference(usedRows)
             unusedCols = set(range(0, D.shape[1])).difference(usedCols)
-            print(unusedCols)
-            print(unusedRows)
 
             # in the event that the number of object centroids is
             # equal or greater than the number of input centroids
